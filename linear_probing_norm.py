@@ -8,7 +8,6 @@ from tqdm import tqdm
 train = load_dataset('cifar10', split= 'train').with_format("torch")
 test = load_dataset('cifar10', split='test').with_format("torch")
 
-
 train_imgs = [img for img in train['img']]
 test_imgs = [img for img in test['img']]
 train_labels = [label for label in train['label']]
@@ -21,7 +20,6 @@ beit.eval()
 
 n_beit_layers = len(beit.beit.encoder.layer)
 
-#extract hidden states
 def beit_output(data):
     features = feature_extractor(data, return_tensors='pt')
     output = beit(**features, output_hidden_states = True)
@@ -39,7 +37,10 @@ def extract_layer(list, outputs):
 
     with torch.no_grad():
         for i in range(n_beit_layers):
-            list.append(outputs.hidden_states[i].reshape(n,-1).cpu().detach().numpy())
+            layer_output = outputs.hidden_states[i]
+            #hidden state output to normalization layer
+            list.append(beit.beit.encoder.layer[i].layernorm_before(
+                layer_output).reshape(n, -1).cpu().detach().numpy())
     return list
 
 extract_layer(train_layers, train_outputs)
@@ -47,15 +48,16 @@ extract_layer(test_layers, test_outputs)
 
 #linear classification
 model = LogisticRegression()
+
 result = []
 
 for i in tqdm(range(n_beit_layers)):
-    model.fit(train_layers[i], train_labels)
+    model.fit(train_layers[i],train_labels)
     pred = model.predict(test_layers[i])
 
     metric = evaluate.load('accuracy')
     accuracy = metric.compute(predictions=pred, references=test_labels)
-
+    
     result.append(accuracy.values())
 
 for i in range(n_beit_layers):
