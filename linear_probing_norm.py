@@ -5,8 +5,10 @@ from sklearn.linear_model import LogisticRegression
 import torch
 from tqdm import tqdm
 
-train = load_dataset('cifar10', split= 'train').with_format("torch")
-test = load_dataset('cifar10', split='test').with_format("torch")
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+train = load_dataset('cifar10', split= 'train').with_format("torch").to(device)
+test = load_dataset('cifar10', split='test').with_format("torch").to(device)
 
 train_imgs = [img for img in train['img']]
 test_imgs = [img for img in test['img']]
@@ -16,17 +18,18 @@ test_labels = [label for label in test['label']]
 feature_extractor = AutoFeatureExtractor.from_pretrained('microsoft/beit-base-patch16-224-pt22k')
 beit = BeitForMaskedImageModeling.from_pretrained('microsoft/beit-base-patch16-224-pt22k')
 
+beit.to(device)
 beit.eval()
 
 n_beit_layers = len(beit.beit.encoder.layer)
 
-def beit_output(data):
-    features = feature_extractor(data, return_tensors='pt')
+def beit_output(data, device='cpu'):
+    features = feature_extractor(data, return_tensors='pt').to(device)
     output = beit(**features, output_hidden_states = True)
     return output
 
-train_outputs = beit_output(train_imgs)
-test_outputs = beit_output(test_imgs)
+train_outputs = beit_output(train_imgs, device=device)
+test_outputs = beit_output(test_imgs, device=device)
 
 train_layers = []
 test_layers = []
