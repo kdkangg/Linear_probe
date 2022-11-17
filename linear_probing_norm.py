@@ -72,7 +72,7 @@ for i in tqdm(range(n_beit_layers)):
     metric = evaluate.load('accuracy')
     accuracy = metric.compute(predictions=pred, references=test_labels)
 
-    result.append(accuracy.values())
+    result.append(accuracy['accuracy'])
 
 for i in range(n_beit_layers):
     print(f'layer: {i}, accuracy : {result[i]}')
