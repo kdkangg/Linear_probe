@@ -5,7 +5,6 @@ from sklearn.linear_model import LogisticRegression
 import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
